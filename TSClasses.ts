@@ -2,12 +2,15 @@
 "use strict";
 /*
 
-TODO:
-    - separate classes in ui, controller, etc
-    - check for existing sources
-    - rename basic classes
-*/
+ TODO:
+ - separate classes in ui, controller, etc
+ - check for existing sources
+ - rename basic classes
+ - perform npm deploy
 
+ ** used TweenMax, but no
+ ** hard to reach class methods inside nested functs.
+ */
 
 
 module Chart {
@@ -18,7 +21,7 @@ module Chart {
 
     export class Basics {
 
-        private app: PIXI.Application;
+        private app:PIXI.Application;
 
         constructor() {
 
@@ -29,14 +32,14 @@ module Chart {
 
             let appMiddle = curtainHeight / 2;
 
-            this.app = new PIXI.Application(appWidth, appHeight, { backgroundColor: 0x0b991b });
+            this.app = new PIXI.Application(appWidth, appHeight, {backgroundColor: 0x0b991b});
             document.body.appendChild(this.app.view);
 
             this.fillSignTexturesArray();
 
             let curtainContainer = new PIXI.Container();
             let curtainImgSprite = PIXI.Sprite.fromImage("./assets/img/slotOverlay.png");
-            curtainContainer.addChild(curtainImgSprite );
+            curtainContainer.addChild(curtainImgSprite);
 
 
             let rectGraphic = new PIXI.Graphics();
@@ -48,14 +51,14 @@ module Chart {
             rectSprite.x = appWidth / 2;
             rectSprite.y = curtainHeight / 2;
 
-            rectSprite.anchor.set(0.5,0.5);
+            rectSprite.anchor.set(0.5, 0.5);
 
             //curtainContainer.addChild(rectSprite );
 
             let middleLineGraphic = new PIXI.Graphics();
             middleLineGraphic.lineStyle(2, 0xFF0000, 1);
-            middleLineGraphic.moveTo(0,0);
-            middleLineGraphic.lineTo(appWidth,0);
+            middleLineGraphic.moveTo(0, 0);
+            middleLineGraphic.lineTo(appWidth, 0);
 
             let middleLineSprite = new PIXI.Sprite(middleLineGraphic.generateCanvasTexture());
             middleLineSprite.y = appMiddle;
@@ -64,11 +67,11 @@ module Chart {
 
             let spinButton = new SpinButton();
             spinButton.position.set(appWidth / 2, appHeight - spinButton.height);
-            spinButton.anchor.set(0.5,0.5);
+            spinButton.anchor.set(0.5, 0.5);
 
-            curtainContainer.addChild(spinButton );
+            curtainContainer.addChild(spinButton);
 
-            let reelComponent:ReelComponent = new ReelComponent([7,8,9,10], this.app.ticker);
+            let reelComponent:ReelComponent = new ReelComponent([7, 8, 9, 10], this.app.ticker);
 
             reelComponent.x = 200;
             reelComponent.y = appMiddle;
@@ -83,25 +86,24 @@ module Chart {
         private fillSignTexturesArray():void {
             let idx:String;
             for (let i = 1; i < 14; i++) {
-                idx = (i > 9) ? String(i) : "0"+String(i);
-                Collections.signsTexturesArray.push(PIXI.Texture.fromImage("./assets/img/"+ idx +".png"));
+                idx = (i > 9) ? String(i) : "0" + String(i);
+                Collections.signsTexturesArray.push(PIXI.Texture.fromImage("./assets/img/" + idx + ".png"));
             }
         }
 
     }
 
 
-
     export class SpinButton extends PIXI.Sprite {
 
-        private textureButton: PIXI.Texture ;
-        private textureButtonPressed: PIXI.Texture;
-        private textureButtonHover: PIXI.Texture;
-        private textureButtonDisable: PIXI.Texture;
+        private textureButton:PIXI.Texture;
+        private textureButtonPressed:PIXI.Texture;
+        private textureButtonHover:PIXI.Texture;
+        private textureButtonDisable:PIXI.Texture;
 
         constructor() {
 
-            this.textureButton =  PIXI.Texture.fromImage('assets/img/btn_spin_normal.png');
+            this.textureButton = PIXI.Texture.fromImage('assets/img/btn_spin_normal.png');
             this.textureButtonPressed = PIXI.Texture.fromImage('assets/img/btn_spin_pressed.png');
             this.textureButtonHover = PIXI.Texture.fromImage('assets/img/btn_spin_hover.png');
             this.textureButtonDisable = PIXI.Texture.fromImage('assets/img/btn_spin_disable.png');
@@ -162,8 +164,10 @@ module Chart {
 
         private ticker:PIXI.ticker.Ticker;
 
-        private signHeight: number = 178;
-        private signVPadding: number = -20;
+        private signHeight:number = 178;
+        private signVPadding:number = -20;
+
+        private mainColumnSprite:PIXI.Sprite;
 
         constructor(signsIDArray:[], ticker) {
             super();
@@ -174,50 +178,86 @@ module Chart {
             this.init();
 
 
-
         }
 
         private init():void {
 
-            var beginSignsAmount: number = 4;
-            var endSignsAmount: number = 2;
+            var beginSignsAmount:number = 4;
+            var endSignsAmount:number = 2;
 
-            let fullSignsIDArray:[] = this.signsIDArray.slice(this.signsIDArray.length-beginSignsAmount,this.signsIDArray.length);
+            let fullSignsIDArray:[] = this.signsIDArray.slice(this.signsIDArray.length - beginSignsAmount, this.signsIDArray.length);
             fullSignsIDArray = fullSignsIDArray.concat(this.signsIDArray);
-            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDArray.slice(0,endSignsAmount));
+            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDArray.slice(0, endSignsAmount));
 
-            let mainColumnSprite = this.getSignColumnSprite(fullSignsIDArray);
+            this.mainColumnSprite = this.getSignColumnSprite(fullSignsIDArray);
 
-            mainColumnSprite.y = -this.signStep * beginSignsAmount;
+            this.mainColumnSprite.y = -this.signStep * beginSignsAmount;
 
 
-            this.addChild(mainColumnSprite);
+            this.addChild(this.mainColumnSprite);
 
-           // console.log("-first>", mainColumnSprite.y + (this.signStep * beginSignsAmount));
+            // ==================================================
 
-            this.ticker.add(this.reelMoving);
+            /*var rotateCD = new TweenMax.to(mainColumnSprite, .3, {y: -this.signStep * 2,
+             ease:Linear.easeNone,repeat:-1,paused:true}).timeScale(0);*/
 
+            /*play.onclick = function(){
+             rotateCD.play();
+             TweenLite.to(rotateCD,2,{timeScale:1});
+             };
+
+             pause.onclick = function(){
+             TweenLite.to(rotateCD,2,{timeScale:0,onComplete:function(){ this.pause() }})
+             };*/
+
+
+            /*var animation = new TweenMax.to(mainColumnSprite, 2, {y: -this.signStep * 2,
+             repeatDelay:0.5, ease:Linear.easeNone, onComplete:function() {
+
+             mainColumnSprite.y = -referencedSignStep * 6;
+
+             TweenMax.to(mainColumnSprite, 2, {y: -referencedSignStep * 2, repeat: -1, ease:Linear.easeNone});
+
+             }});*/
+
+            //TweenMax.fromTo(animation,2,{timeScale:0},{timeScale:1})
+
+            /* var animation = new TimelineLite()
+             animation
+             .to(mainColumnSprite, 2, {y:-this.signStep * 2, ease:Linear.easeNone})
+             .to(mainColumnSprite, 3, {x:500, ease:Linear.easeNone});*/
+
+            //this.ticker.add(this.reelMoving);
+
+            //this.mainColumnSpriteBlurAmount = 3;
+
+            /*this.mainColumnSprite.filters = [new PIXI.filters.BlurYFilter()];
+            this.mainColumnSprite.filters[0].blur = 0;*/
         }
 
-        private reelMoving(): void {
+        private reelMoving = () => {
 
-            console.log("-start>", this);
+            let speed = 2;
+            let maxSpeed = 10;
 
-            /*if (  mainColumnSprite.y + (this.signStep * beginSignsAmount)
-                >
-                (this.signStep * (2)  )
+            //if (speed < maxSpeed)
+                speed += 2;
 
-            )
-            {
-
+            if (this.mainColumnSprite.y > -this.signStep * 2) {
+                this.mainColumnSprite.y = -this.signStep * 6 + speed;
             } else {
-                mainColumnSprite.y +=6;
+                this.mainColumnSprite.y += speed;
             }
-
-            console.log("-proc>", this.signStep);*/
         }
 
-        private get signStep(): number {
+        private set mainColumnSpriteBlurAmount(value:number):void {
+            if (!this.mainColumnSprite.filters)
+                this.mainColumnSprite.filters = [new PIXI.filters.BlurYFilter()];
+
+            this.mainColumnSprite.filters[0].blur = value;
+        }
+
+        private get signStep():number {
             return (this.signHeight + this.signVPadding);
         }
 
@@ -226,11 +266,11 @@ module Chart {
             let currentSignSprite:PIXI.Sprite;
 
             signsIDArray.forEach((item, index) => {
-                currentSignSprite = new PIXI.Sprite(Collections.signsTexturesArray[item-1]);
-                currentSignSprite.anchor.set(0.5,0.5)
+                currentSignSprite = new PIXI.Sprite(Collections.signsTexturesArray[item - 1]);
+                currentSignSprite.anchor.set(0.5, 0.5)
                 currentSignSprite.y = this.signStep * index;
 
-                if (index == 4){
+                if (index == 4) {
                     let enter = new PIXI.Graphics();
                     enter.lineStyle(2, 0x0000FF, 1);
                     enter.beginFill(0xF0B7F0, 1);
@@ -242,9 +282,7 @@ module Chart {
                 signsColumnSprite.addChild(currentSignSprite);
 
 
-
             });
-
 
 
             return signsColumnSprite;
