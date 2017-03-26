@@ -10,7 +10,6 @@
 
  ** used TweenMax, but no
  ** hard to reach class methods inside nested functs.
- * native pixi ticker has lags
  */
 
 
@@ -72,7 +71,7 @@ module Chart {
 
             curtainContainer.addChild(spinButton);
 
-            let reelComponent:ReelComponent = new ReelComponent([7, 8, 9, 10], this.app.ticker);
+            let reelComponent:ReelComponent = new ReelComponent([7, 8, 9, 10, 11, 12], this.app.ticker);
 
             reelComponent.x = 200;
             reelComponent.y = appMiddle;
@@ -161,16 +160,18 @@ module Chart {
 
         public signsIDArray:[];
 
-        private signsTexturesArray:PIXI.Texture[];
-
         private ticker:PIXI.ticker.Ticker;
 
         private signHeight:number = 178;
         private signVPadding:number = -20;
 
-        private mainColumnSprite:PIXI.Sprite;
 
-        private animationFunction:any;
+        private beginSignsAmount:number = 4;
+        private endSignsAmount:number = 2;
+
+        private reelSprite:PIXI.Sprite;
+
+        private animationFunction: Function;
 
         constructor(signsIDArray:[], ticker) {
             super();
@@ -178,31 +179,52 @@ module Chart {
             this.signsIDArray = signsIDArray;
             this.ticker = ticker;
 
+            this.createMainColumnSprite();
+            this.setReelToId(0);
+
             this.init();
+        }
 
+        public startReel():void {
 
+            let speed = 0.3;
+            let maxSpeed = 15;
+
+            this.animationFunction = function() {
+
+                if (speed < maxSpeed){
+                    speed *= 2;
+                    this.mainColumnSpriteBlurAmount += 1.5;
+                }
+
+                if (this.reelSprite.y > this.getColumnYBySignIndex(-this.endSignsAmount)) {
+                    this.setReelToId(this.signsIDArray.length - this.endSignsAmount,speed)
+                } else {
+                    this.reelSprite.y += speed;
+                }
+            }
+
+            this.ticker.add(this.animationFunction, this);
+        }
+
+        private stopReel(context: any): void {
+            let randomSign = parseInt(Math.random()*context.signsIDArray.length);
+
+            context.ticker.remove(context.animationFunction);
+            context.setReelToId(randomSign);
+
+            context.mainColumnSpriteBlurAmount = 0;
         }
 
         private init():void {
 
-            var beginSignsAmount:number = 4;
-            var endSignsAmount:number = 2;
-
-            let fullSignsIDArray:[] = this.signsIDArray.slice(this.signsIDArray.length - beginSignsAmount, this.signsIDArray.length);
-            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDArray);
-            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDArray.slice(0, endSignsAmount));
-
-            this.mainColumnSprite = this.getSignColumnSprite(fullSignsIDArray);
-
-            this.mainColumnSprite.y = -this.signStep * beginSignsAmount;
 
 
-            this.addChild(this.mainColumnSprite);
 
             // ==================================================
 
              /*
-            var rotateCD = new TweenMax.to(this.mainColumnSprite, 2, {y: -this.signStep * 2,
+            var rotateCD = new TweenMax.to(this.reelSprite, 2, {y: -this.signStep * 2,
              ease:Linear.easeNone,repeat:-1,paused:true}).timeScale(0);
 
              play.onclick = function(){
@@ -216,12 +238,12 @@ module Chart {
 
 
 
-            /*var animation = new TweenMax.to(mainColumnSprite, 2, {y: -this.signStep * 2,
+            /*var animation = new TweenMax.to(reelSprite, 2, {y: -this.signStep * 2,
              repeatDelay:0.5, ease:Linear.easeNone, onComplete:function() {
 
-             mainColumnSprite.y = -referencedSignStep * 6;
+             reelSprite.y = -referencedSignStep * 6;
 
-             TweenMax.to(mainColumnSprite, 2, {y: -referencedSignStep * 2, repeat: -1, ease:Linear.easeNone});
+             TweenMax.to(reelSprite, 2, {y: -referencedSignStep * 2, repeat: -1, ease:Linear.easeNone});
 
              }});*/
 
@@ -229,89 +251,62 @@ module Chart {
 
             /* var animation = new TimelineLite()
              animation
-             .to(mainColumnSprite, 2, {y:-this.signStep * 2, ease:Linear.easeNone})
-             .to(mainColumnSprite, 3, {x:500, ease:Linear.easeNone});*/
+             .to(reelSprite, 2, {y:-this.signStep * 2, ease:Linear.easeNone})
+             .to(reelSprite, 3, {x:500, ease:Linear.easeNone});*/
 
 
             this.startReel();
 
-            setTimeout(this.stopReel, 3000, this)
+            setTimeout(this.stopReel, 1500, this)
 
-
-        }
-
-        private startReel():void {
-
-            let speed = 0.3;
-            let maxSpeed = 20;
-
-            this.animationFunction = function() {
-
-                if (speed < maxSpeed){
-                    speed *= 2;
-                    //this.mainColumnSpriteBlurAmount += 1.5;
-                }
-
-                /*if (this.mainColumnSpriteBlurAmount < 10)
-                    this.mainColumnSpriteBlurAmount += 0.3;*/
-
-                if (this.mainColumnSprite.y > -this.signStep * 2) {
-                    this.mainColumnSprite.y = -this.signStep * 6 + speed;
-                } else {
-                    this.mainColumnSprite.y += speed;
-                }
-
-                console.log("-eee>");
-            }
-
-            this.ticker.add(this.animationFunction, this);
-
+            //console.log("-FFF>", this.animationFunction);
 
         }
 
-        /*private stopReel = (rr):void => {
-            //let randomSign = Math.random()*this.signsIDArray.length;
+        private createMainColumnSprite():void {
+            let fullSignsIDArray:[] = this.signsIDArray.slice(this.signsIDArray.length - this.beginSignsAmount, this.signsIDArray.length);
+            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDArray);
+            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDArray.slice(0, this.endSignsAmount));
 
-            this.mainColumnSprite.y = -100;
-            console.log("-end>", this.mainColumnSprite.y, rr);
-
-            this.ticker.remove(this.animationIteration);
-            //this.mainColumnSpriteBlurAmount = 0;
-        }*/
-
-        private stopReel(context: any): void {
-            //let randomSign = Math.random()*this.signsIDArray.length;
-
-            //context.ticker.remove(context.animationIteration);
-
-            context.mainColumnSprite.y = -context.signStep * 4;
-            console.log("-end>", context.mainColumnSprite.y);
-
-
-
-            //this.mainColumnSpriteBlurAmount = 0;
+            this.reelSprite = this.getReelSpriteByIDsArray(fullSignsIDArray);
+            this.addChild(this.reelSprite);
         }
+
+        private setReelToId(idx = 0, correction = 0):void {
+            this.reelSprite.y = this.getColumnYBySignIndex(idx) + correction;
+        }
+
+
+
+
 
         private set mainColumnSpriteBlurAmount(value:number):void {
-            if (!this.mainColumnSprite.filters){}
-                this.mainColumnSprite.filters = [new PIXI.filters.BlurYFilter()];
+            if (!this.reelSprite.filters){}
+                this.reelSprite.filters = [new PIXI.filters.BlurYFilter()];
 
 
-            this.mainColumnSprite.filters[0].blur = value;
+            this.reelSprite.filters[0].blur = value;
         }
 
         private get mainColumnSpriteBlurAmount():number {
-            if (!this.mainColumnSprite.filters)
+            if (!this.reelSprite.filters)
                 return 0;
 
-            return this.mainColumnSprite.filters[0].blur;
+            return this.reelSprite.filters[0].blur;
         }
 
         private get signStep():number {
             return (this.signHeight + this.signVPadding);
         }
 
-        private getSignColumnSprite(signsIDArray:[]):PIXI.Sprite {
+        private getColumnYBySignIndex(idx: number): number {
+            if (idx > this.signsIDArray.length - 1)
+                idx = this.signsIDArray.length - 1;
+
+            return -this.signStep * (this.beginSignsAmount + idx);
+        }
+
+        private getReelSpriteByIDsArray(signsIDArray:[]):PIXI.Sprite {
             let signsColumnSprite:PIXI.Sprite = new PIXI.Sprite();
             let currentSignSprite:PIXI.Sprite;
 
@@ -330,10 +325,7 @@ module Chart {
                 }
 
                 signsColumnSprite.addChild(currentSignSprite);
-
-
             });
-
 
             return signsColumnSprite;
         }
