@@ -10,6 +10,7 @@
 
  ** used TweenMax, but no
  ** hard to reach class methods inside nested functs.
+ * native pixi ticker has lags
  */
 
 
@@ -169,6 +170,8 @@ module Chart {
 
         private mainColumnSprite:PIXI.Sprite;
 
+        private animationFunction:any;
+
         constructor(signsIDArray:[], ticker) {
             super();
 
@@ -198,10 +201,11 @@ module Chart {
 
             // ==================================================
 
-            /*var rotateCD = new TweenMax.to(mainColumnSprite, .3, {y: -this.signStep * 2,
-             ease:Linear.easeNone,repeat:-1,paused:true}).timeScale(0);*/
+             /*
+            var rotateCD = new TweenMax.to(this.mainColumnSprite, 2, {y: -this.signStep * 2,
+             ease:Linear.easeNone,repeat:-1,paused:true}).timeScale(0);
 
-            /*play.onclick = function(){
+             play.onclick = function(){
              rotateCD.play();
              TweenLite.to(rotateCD,2,{timeScale:1});
              };
@@ -209,6 +213,7 @@ module Chart {
              pause.onclick = function(){
              TweenLite.to(rotateCD,2,{timeScale:0,onComplete:function(){ this.pause() }})
              };*/
+
 
 
             /*var animation = new TweenMax.to(mainColumnSprite, 2, {y: -this.signStep * 2,
@@ -227,34 +232,79 @@ module Chart {
              .to(mainColumnSprite, 2, {y:-this.signStep * 2, ease:Linear.easeNone})
              .to(mainColumnSprite, 3, {x:500, ease:Linear.easeNone});*/
 
-            //this.ticker.add(this.reelMoving);
 
-            //this.mainColumnSpriteBlurAmount = 3;
+            this.startReel();
 
-            /*this.mainColumnSprite.filters = [new PIXI.filters.BlurYFilter()];
-            this.mainColumnSprite.filters[0].blur = 0;*/
+            setTimeout(this.stopReel, 3000, this)
+
+
         }
 
-        private reelMoving = () => {
+        private startReel():void {
 
-            let speed = 2;
-            let maxSpeed = 10;
+            let speed = 0.3;
+            let maxSpeed = 20;
 
-            //if (speed < maxSpeed)
-                speed += 2;
+            this.animationFunction = function() {
 
-            if (this.mainColumnSprite.y > -this.signStep * 2) {
-                this.mainColumnSprite.y = -this.signStep * 6 + speed;
-            } else {
-                this.mainColumnSprite.y += speed;
+                if (speed < maxSpeed){
+                    speed *= 2;
+                    //this.mainColumnSpriteBlurAmount += 1.5;
+                }
+
+                /*if (this.mainColumnSpriteBlurAmount < 10)
+                    this.mainColumnSpriteBlurAmount += 0.3;*/
+
+                if (this.mainColumnSprite.y > -this.signStep * 2) {
+                    this.mainColumnSprite.y = -this.signStep * 6 + speed;
+                } else {
+                    this.mainColumnSprite.y += speed;
+                }
+
+                console.log("-eee>");
             }
+
+            this.ticker.add(this.animationFunction, this);
+
+
+        }
+
+        /*private stopReel = (rr):void => {
+            //let randomSign = Math.random()*this.signsIDArray.length;
+
+            this.mainColumnSprite.y = -100;
+            console.log("-end>", this.mainColumnSprite.y, rr);
+
+            this.ticker.remove(this.animationIteration);
+            //this.mainColumnSpriteBlurAmount = 0;
+        }*/
+
+        private stopReel(context: any): void {
+            //let randomSign = Math.random()*this.signsIDArray.length;
+
+            //context.ticker.remove(context.animationIteration);
+
+            context.mainColumnSprite.y = -context.signStep * 4;
+            console.log("-end>", context.mainColumnSprite.y);
+
+
+
+            //this.mainColumnSpriteBlurAmount = 0;
         }
 
         private set mainColumnSpriteBlurAmount(value:number):void {
-            if (!this.mainColumnSprite.filters)
+            if (!this.mainColumnSprite.filters){}
                 this.mainColumnSprite.filters = [new PIXI.filters.BlurYFilter()];
 
+
             this.mainColumnSprite.filters[0].blur = value;
+        }
+
+        private get mainColumnSpriteBlurAmount():number {
+            if (!this.mainColumnSprite.filters)
+                return 0;
+
+            return this.mainColumnSprite.filters[0].blur;
         }
 
         private get signStep():number {
@@ -293,3 +343,13 @@ module Chart {
 }
 
 var perfchart = new Chart.Basics();
+
+/*
+var start = null;
+function step(timestamp) {
+    if (!start) start = timestamp;
+    var progress = timestamp - start;
+    dragon.update(progress);
+    window.requestAnimationFrame(step);
+}
+window.requestAnimationFrame(step);*/
