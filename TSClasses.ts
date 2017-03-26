@@ -7,21 +7,42 @@
  - check for existing sources
  - rename basic classes
  - perform npm deploy
+ - consts instead privates
 
  ** used TweenMax, but no
  ** hard to reach class methods inside nested functs.
+ *
  */
 
 
-module Chart {
+module Slots {
 
-    export class Collections {
+    interface ReelItem {
+        row:    [];
+        init:     number;
+    }
+
+    class Mocks {
+        public static reelMock = '{ "sequences":[     {"row":[5,6,8,7,5,4], "init":3},' +
+                                               '{"row":[11,6,5,2,10,6,3,1], "init":2},' +
+                                               '{"row":[8,9,12,11,7,8,4,3], "init":1},' +
+                                               '{"row":[9,10,12,6,2,8,9,4,7], "init":4},' +
+                                               '{"row":[3,0,8,11,6,13,12,6,7,10], "init":6} ] }';
+    }
+
+    class Collections {
         public static signsTexturesArray = new Array<PIXI.Texture>();
+    }
+
+    class Utils {
+        public static ticker: PIXI.ticker.Ticker;
     }
 
     export class Basics {
 
         private app:PIXI.Application;
+
+        private reelsSequenceComponent: ReelsSequenceComponent;
 
         constructor() {
 
@@ -34,8 +55,13 @@ module Chart {
 
             this.app = new PIXI.Application(appWidth, appHeight, {backgroundColor: 0x0b991b});
             document.body.appendChild(this.app.view);
+            Utils.ticker = this.app.ticker;
 
             this.fillSignTexturesArray();
+
+
+
+
 
             let curtainContainer = new PIXI.Container();
             let curtainImgSprite = PIXI.Sprite.fromImage("./assets/img/slotOverlay.png");
@@ -71,12 +97,13 @@ module Chart {
 
             curtainContainer.addChild(spinButton);
 
-            let reelComponent:ReelComponent = new ReelComponent([7, 8, 9, 10, 11, 12], this.app.ticker);
+            this.reelsSequenceComponent = new ReelsSequenceComponent();
 
-            reelComponent.x = 200;
-            reelComponent.y = appMiddle;
+            this.reelsSequenceComponent.position.set(100,100);
 
-            this.app.stage.addChild(reelComponent);
+
+
+            this.app.stage.addChild(this.reelsSequenceComponent);
 
 
             this.app.stage.addChild(curtainContainer);
@@ -94,7 +121,7 @@ module Chart {
     }
 
 
-    export class SpinButton extends PIXI.Sprite {
+    class SpinButton extends PIXI.Sprite {
 
         private textureButton:PIXI.Texture;
         private textureButtonPressed:PIXI.Texture;
@@ -156,33 +183,79 @@ module Chart {
 
     }
 
-    export class ReelComponent extends PIXI.Sprite {
+    class ReelsSequenceComponent extends PIXI.Sprite {
 
-        public signsIDArray:[];
+        private fixedWidth = 1000;
+        private fixedHeight = 600;
 
-        private ticker:PIXI.ticker.Ticker;
+        private reelsArray: ReelComponent[] = [];
+
+        constructor() {
+            super();
+
+            // background layer
+            // ---------------
+            // reels
+            // ---------------
+            //
+
+            let background = new PIXI.extras
+                .TilingSprite(PIXI.Texture.fromImage("./assets/img/winningFrameBackground.jpg"));
+            background.width = this.fixedWidth;
+            background.height = this.fixedHeight;
+            this.addChild(background)
+
+            let reelsParsedArray: ReelItem[] = JSON.parse(Mocks.reelMock).sequences;
+
+            this.reelsArray = [ new ReelComponent,
+                                new ReelComponent,
+                                new ReelComponent,
+                                new ReelComponent,
+                                new ReelComponent ];
+
+            this.reelsArray.forEach((reelComponent, index) => {
+                reelComponent.signsIDsArray = reelsParsedArray[index].row;
+                reelComponent.createMainColumnSprite();
+                //reelComponent.setReelToId(reelsParsedArray[index].init);
+                reelComponent.setReelToId(0);
+                reelComponent.x = index * (this.fixedWidth/this.reelsArray.length);
+                reelComponent.y = this.fixedHeight / 2;
+                reelComponent.pivot.x = -this.fixedWidth/this.reelsArray.length*0.5;
+
+                this.addChild(reelComponent)
+            });
+
+
+
+        }
+    }
+
+    class ReelComponent extends PIXI.Sprite {
+
+        public signsIDsArray: number[];
+        public startSignID: number;
 
         private signHeight:number = 178;
         private signVPadding:number = -20;
-
 
         private beginSignsAmount:number = 4;
         private endSignsAmount:number = 2;
 
         private reelSprite:PIXI.Sprite;
 
-        private animationFunction: Function;
+        private animationFunction:Function;
 
-        constructor(signsIDArray:[], ticker) {
+        constructor() {
             super();
 
-            this.signsIDArray = signsIDArray;
-            this.ticker = ticker;
+            //this.signsIDsArray = signsIDsArray;
 
-            this.createMainColumnSprite();
+            /*this.createMainColumnSprite();
             this.setReelToId(0);
 
-            this.init();
+            this.startReel();
+
+            setTimeout(this.stopReel, 1500, this)*/
         }
 
         public startReel():void {
@@ -190,27 +263,27 @@ module Chart {
             let speed = 0.3;
             let maxSpeed = 15;
 
-            this.animationFunction = function() {
+            this.animationFunction = function () {
 
-                if (speed < maxSpeed){
+                if (speed < maxSpeed) {
                     speed *= 2;
                     this.mainColumnSpriteBlurAmount += 1.5;
                 }
 
                 if (this.reelSprite.y > this.getColumnYBySignIndex(-this.endSignsAmount)) {
-                    this.setReelToId(this.signsIDArray.length - this.endSignsAmount,speed)
+                    this.setReelToId(this.signsIDsArray.length - this.endSignsAmount, speed)
                 } else {
                     this.reelSprite.y += speed;
                 }
             }
 
-            this.ticker.add(this.animationFunction, this);
+            Utils.ticker.add(this.animationFunction, this);
         }
 
-        private stopReel(context: any): void {
-            let randomSign = parseInt(Math.random()*context.signsIDArray.length);
+        private stopReel(context:any):void {
+            let randomSign = parseInt(Math.random() * context.signsIDsArray.length);
 
-            context.ticker.remove(context.animationFunction);
+            Utils.ticker.remove(context.animationFunction);
             context.setReelToId(randomSign);
 
             context.mainColumnSpriteBlurAmount = 0;
@@ -223,8 +296,8 @@ module Chart {
 
             // ==================================================
 
-             /*
-            var rotateCD = new TweenMax.to(this.reelSprite, 2, {y: -this.signStep * 2,
+            /*
+             var rotateCD = new TweenMax.to(this.reelSprite, 2, {y: -this.signStep * 2,
              ease:Linear.easeNone,repeat:-1,paused:true}).timeScale(0);
 
              play.onclick = function(){
@@ -235,7 +308,6 @@ module Chart {
              pause.onclick = function(){
              TweenLite.to(rotateCD,2,{timeScale:0,onComplete:function(){ this.pause() }})
              };*/
-
 
 
             /*var animation = new TweenMax.to(reelSprite, 2, {y: -this.signStep * 2,
@@ -255,35 +327,30 @@ module Chart {
              .to(reelSprite, 3, {x:500, ease:Linear.easeNone});*/
 
 
-            this.startReel();
-
-            setTimeout(this.stopReel, 1500, this)
-
-            //console.log("-FFF>", this.animationFunction);
 
         }
 
-        private createMainColumnSprite():void {
-            let fullSignsIDArray:[] = this.signsIDArray.slice(this.signsIDArray.length - this.beginSignsAmount, this.signsIDArray.length);
-            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDArray);
-            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDArray.slice(0, this.endSignsAmount));
+        public createMainColumnSprite():void {
+            if (!this.signsIDsArray || !this.signsIDsArray.length) return;
+
+            this.removeChildren();
+
+            let fullSignsIDArray:[] = this.signsIDsArray.slice(this.signsIDsArray.length - this.beginSignsAmount, this.signsIDsArray.length);
+            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDsArray);
+            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDsArray.slice(0, this.endSignsAmount));
 
             this.reelSprite = this.getReelSpriteByIDsArray(fullSignsIDArray);
             this.addChild(this.reelSprite);
         }
 
-        private setReelToId(idx = 0, correction = 0):void {
+        public setReelToId(idx = 0, correction = 0):void {
             this.reelSprite.y = this.getColumnYBySignIndex(idx) + correction;
         }
 
-
-
-
-
         private set mainColumnSpriteBlurAmount(value:number):void {
-            if (!this.reelSprite.filters){}
-                this.reelSprite.filters = [new PIXI.filters.BlurYFilter()];
-
+            if (!this.reelSprite.filters) {
+            }
+            this.reelSprite.filters = [new PIXI.filters.BlurYFilter()];
 
             this.reelSprite.filters[0].blur = value;
         }
@@ -299,9 +366,9 @@ module Chart {
             return (this.signHeight + this.signVPadding);
         }
 
-        private getColumnYBySignIndex(idx: number): number {
-            if (idx > this.signsIDArray.length - 1)
-                idx = this.signsIDArray.length - 1;
+        private getColumnYBySignIndex(idx:number):number {
+            if (idx > this.signsIDsArray.length - 1)
+                idx = this.signsIDsArray.length - 1;
 
             return -this.signStep * (this.beginSignsAmount + idx);
         }
@@ -334,14 +401,5 @@ module Chart {
 
 }
 
-var perfchart = new Chart.Basics();
+new Slots.Basics();
 
-/*
-var start = null;
-function step(timestamp) {
-    if (!start) start = timestamp;
-    var progress = timestamp - start;
-    dragon.update(progress);
-    window.requestAnimationFrame(step);
-}
-window.requestAnimationFrame(step);*/
