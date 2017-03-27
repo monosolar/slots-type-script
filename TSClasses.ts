@@ -1,5 +1,7 @@
 ///<reference path="./lib/pixi.js.d.ts" />
+///<reference path="./node_modules/pixi-sound/lib/index.d.ts" />
 "use strict";
+
 /*
 
  TODO:
@@ -32,6 +34,8 @@ module Slots {
 
     class Collections {
         public static signsTexturesArray = new Array<PIXI.Texture>();
+        public static landingSound = PIXI.sound.Sound.from('./assets/sound/Landing_1.mp3');
+        public static reelSpinSound = PIXI.sound.Sound.from('./assets/sound/Reel_Spin.mp3');
     }
 
     class Utils {
@@ -86,7 +90,7 @@ module Slots {
         }
 
         private onSpinButtonClick = () => {
-            this.reelsSequenceComponent.addListener('ON_FINISHED', ()=> {
+            this.reelsSequenceComponent.addListener(ReelsSequenceComponent.ON_FINISHED, ()=> {
                 this.spinButton.enabled = true;
             });
 
@@ -212,14 +216,18 @@ module Slots {
         }
 
         public start():void {
+            const reelSpinInitTime = 2000;
+            const attachedDeltaTime = 450;
+
             this.reelsArray.forEach((reelComponent, index) => {
                 reelComponent.startReel();
-                setTimeout(reelComponent.stopReel, 1000 + (index * 400), reelComponent);
+                setTimeout(reelComponent.stopReel, reelSpinInitTime + (index * attachedDeltaTime), reelComponent);
             });
-            this.reelsArray[this.reelsArray.length - 1].addListener('STOPPED', ()=> {
-                this.emit('ON_FINISHED', this);
-            })
-
+            this.reelsArray[this.reelsArray.length - 1].addListener(ReelComponent.STOPPED, ()=> {
+                this.emit(ReelsSequenceComponent.ON_FINISHED, this);
+                Collections.reelSpinSound.stop();
+            });
+            Collections.reelSpinSound.play();
         }
     }
 
@@ -263,6 +271,7 @@ module Slots {
             }
 
             Utils.ticker.add(this.animationFunction, this);
+
         }
 
         private stopReel(context:any):void {
@@ -273,7 +282,9 @@ module Slots {
 
             context.mainColumnSpriteBlurAmount = 0;
 
-            context.emit('STOPPED');
+            context.emit(ReelComponent.STOPPED);
+            Collections.landingSound.volume = 0.5;
+            Collections.landingSound.play();
         }
 
         public createMainColumnSprite():void {
