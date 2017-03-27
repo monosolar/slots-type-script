@@ -1,0 +1,25 @@
+{
+  "name": "y",
+  "version": "1.0.0",
+  "description": "",
+  "main": "TSClasses.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monosolar/slots-type-script.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/monosolar/slots-type-script/issues"
+  },
+  "homepage": "https://github.com/monosolar/slots-type-script#readme",
+  "dependencies": {
+    "pixi-sound": "^1.4.0"
+  },
+  "devDependencies": {
+    "@types/pixi.js": "^4.4.0"
+  }
+}

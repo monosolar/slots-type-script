@@ -1,21 +1,6 @@
-///<reference path="./lib/pixi.js.d.ts" />
+///<reference path="./node_modules/@types/pixi.js/index.d.ts" />
 ///<reference path="./node_modules/pixi-sound/lib/index.d.ts" />
 "use strict";
-
-/*
-
- TODO:
- - separate classes in ui, controller, etc
- - check for existing sources
- - rename basic classes
- - perform npm deploy
- - consts instead privates
-
- ** used TweenMax, but no
- ** hard to reach class methods inside nested functs.
- * layouting
- */
-
 
 module Slots {
 
@@ -25,15 +10,24 @@ module Slots {
     }
 
     class Mocks {
-    public static reelMock = '{ "sequences":[        {"row":[5,6,8,7,5,4], "init":3},' +
-                                                    '{"row":[11,6,5,2,10,6,3,1], "init":2},' +
-                                                    '{"row":[8,9,12,11,7,8,4,3], "init":1},' +
-                                                    '{"row":[9,10,12,6,2,8,9,4,7], "init":4},' +
-                                                    '{"row":[3,6,8,11,6,13,12,6,7,10], "init":6} ] }';
+        public static reelMock = '{ "sequences":[        {"row":[5,6,8,7,5,4], "init":3},' +
+                                                        '{"row":[11,6,5,2,10,6,3,1], "init":2},' +
+                                                        '{"row":[8,9,12,11,7,8,4,3], "init":1},' +
+                                                        '{"row":[9,10,12,6,2,8,9,4,7], "init":4},' +
+                                                        '{"row":[3,6,8,11,6,13,12,6,7,10], "init":6} ] }';
     }
 
     class Collections {
         public static signsTexturesArray = new Array<PIXI.Texture>();
+
+        public static fillSignsTexturesArray():void {
+            let idx:String;
+            for (let i = 1; i < 14; i++) {
+                idx = (i > 9) ? String(i) : "0" + String(i);
+                Collections.signsTexturesArray.push(PIXI.Texture.fromImage("./assets/img/" + idx + ".png"));
+            }
+        }
+
         public static landingSound = PIXI.sound.Sound.from('./assets/sound/Landing_1.mp3');
         public static reelSpinSound = PIXI.sound.Sound.from('./assets/sound/Reel_Spin.mp3');
     }
@@ -52,14 +46,14 @@ module Slots {
 
         constructor() {
 
-            let appWidth = 1130;
-            let appHeight = 700;
+            const appWidth = 1130;
+            const appHeight = 700;
 
             this.app = new PIXI.Application(appWidth, appHeight, {backgroundColor: 0x0b991b});
             document.body.appendChild(this.app.view);
 
             Utils.ticker = this.app.ticker;
-            this.fillSignTexturesArray();
+            Collections.fillSignsTexturesArray();
 
             let curtainContainer = new PIXI.Container();
             let curtainImgSprite = PIXI.Sprite.fromImage("./assets/img/slotOverlay.png");
@@ -77,17 +71,9 @@ module Slots {
             this.reelsSequenceComponent.y = 33;
 
             this.app.stage.addChild(this.reelsSequenceComponent);
-
             this.app.stage.addChild(curtainContainer);
         }
 
-        private fillSignTexturesArray():void {
-            let idx:String;
-            for (let i = 1; i < 14; i++) {
-                idx = (i > 9) ? String(i) : "0" + String(i);
-                Collections.signsTexturesArray.push(PIXI.Texture.fromImage("./assets/img/" + idx + ".png"));
-            }
-        }
 
         private onSpinButtonClick = () => {
             this.reelsSequenceComponent.addListener(ReelsSequenceComponent.ON_FINISHED, ()=> {
@@ -174,7 +160,6 @@ module Slots {
         private reelsArray:ReelComponent[] = [];
 
         constructor() {
-
             super();
 
             let maskedSprite = new PIXI.Sprite();
@@ -187,11 +172,11 @@ module Slots {
 
             let reelsParsedArray:ReelItem[] = JSON.parse(Mocks.reelMock).sequences;
 
-            this.reelsArray = [new ReelComponent,
-                new ReelComponent,
-                new ReelComponent,
-                new ReelComponent,
-                new ReelComponent];
+            this.reelsArray = [ new ReelComponent,
+                                new ReelComponent,
+                                new ReelComponent,
+                                new ReelComponent,
+                                new ReelComponent   ];
 
             this.reelsArray.forEach((reelComponent, index) => {
                 reelComponent.signsIDsArray = reelsParsedArray[index].row;
@@ -254,7 +239,7 @@ module Slots {
         public startReel():void {
 
             let speed = 0.3;
-            let maxSpeed = 20;
+            let maxSpeed = 3;
 
             this.animationFunction = function () {
 
@@ -271,7 +256,20 @@ module Slots {
             }
 
             Utils.ticker.add(this.animationFunction, this);
+        }
 
+        public createMainColumnSprite():void {
+            if (!this.signsIDsArray || !this.signsIDsArray.length) return;
+
+            this.removeChildren();
+
+            let fullSignsIDArray:[] = this.signsIDsArray.slice(this.signsIDsArray.length - this.beginSignsAmount,
+                                      this.signsIDsArray.length);
+            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDsArray);
+            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDsArray.slice(0, this.endSignsAmount));
+
+            this.reelSprite = this.getReelSpriteByIDsArray(fullSignsIDArray);
+            this.addChild(this.reelSprite);
         }
 
         private stopReel(context:any):void {
@@ -285,19 +283,6 @@ module Slots {
             context.emit(ReelComponent.STOPPED);
             Collections.landingSound.volume = 0.5;
             Collections.landingSound.play();
-        }
-
-        public createMainColumnSprite():void {
-            if (!this.signsIDsArray || !this.signsIDsArray.length) return;
-
-            this.removeChildren();
-
-            let fullSignsIDArray:[] = this.signsIDsArray.slice(this.signsIDsArray.length - this.beginSignsAmount, this.signsIDsArray.length);
-            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDsArray);
-            fullSignsIDArray = fullSignsIDArray.concat(this.signsIDsArray.slice(0, this.endSignsAmount));
-
-            this.reelSprite = this.getReelSpriteByIDsArray(fullSignsIDArray);
-            this.addChild(this.reelSprite);
         }
 
         public setReelToId(idx = 0, correction = 0):void {
