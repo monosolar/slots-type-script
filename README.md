@@ -1,7 +1,7 @@
-#Slots machine prototype
+# Slots machine prototype
 This is an example of using TypeScript + PIXI renderer to perform prototype of spinning slot reel.
 
-##Requirements:
+## Requirements:
  - Make signs animation like in real slots reel
  - Use PIXI.js as renderer
  - Use TypeScript for source code
@@ -20,5 +20,5 @@ This is an example of using TypeScript + PIXI renderer to perform prototype of s
  - Reels starting from last stopped positions
  - Reel has loop spinning animation, end of array is equal to begin
 
-##Realization:
+## Realization:
 Used TypeScript, PIXI main library, PIXI sound tool. Libraries deployed by npm, see package.json
