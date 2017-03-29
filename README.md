@@ -22,3 +22,6 @@ This is an example of using TypeScript + PIXI renderer to perform prototype of s
 
 ## Realization:
 Used TypeScript, PIXI main library, PIXI sound tool. Libraries deployed by npm, see package.json
+
+## Installation
+npm install or download libraries manually according to path's in code 
